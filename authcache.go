@@ -46,3 +46,18 @@ func (ac *AuthCache) Get() ([]*factom.Authority, error) {
 
 	return ac.cache, nil
 }
+
+func (ac *AuthCache) GetSpecific(id string) (*factom.Authority, error) {
+	cache, err := ac.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range cache {
+		if a.AuthorityChainID == id {
+			return a, nil
+		}
+	}
+
+	return nil, nil
+}

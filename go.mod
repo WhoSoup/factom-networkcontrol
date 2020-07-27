@@ -13,7 +13,7 @@ require (
 	github.com/FactomProject/ed25519 v0.0.0-20150814230546-38002c4fe7b6 // indirect
 	github.com/FactomProject/factoid v0.3.4 // indirect
 	github.com/FactomProject/factom v0.3.6-0.20191211155613-15b4a020e839
-	github.com/FactomProject/factomd v6.7.0+incompatible // indirect
+	github.com/FactomProject/factomd v6.7.0+incompatible
 	github.com/FactomProject/fastsha256 v0.2.1 // indirect
 	github.com/FactomProject/fsnotify v0.9.0 // indirect
 	github.com/FactomProject/go-bip32 v0.3.5 // indirect
@@ -22,7 +22,7 @@ require (
 	github.com/FactomProject/go-simplejson v0.5.0 // indirect
 	github.com/FactomProject/go-spew v0.0.0-20160301052117-ddfaec9b42f5 // indirect
 	github.com/FactomProject/gocoding v0.0.0-20150814232539-59666ce39524 // indirect
-	github.com/FactomProject/goleveldb v0.2.1 // indirect
+	github.com/FactomProject/goleveldb v0.2.2-0.20170418171130-e7800c6976c5 // indirect
 	github.com/FactomProject/logrustash v0.0.0-20171005151533-9c7278ede46e // indirect
 	github.com/FactomProject/netki-go-partner-client v0.0.0-20160324224126-426acb535e66 // indirect
 	github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb // indirect
