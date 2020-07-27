@@ -13,7 +13,7 @@ require (
 	github.com/FactomProject/ed25519 v0.0.0-20150814230546-38002c4fe7b6 // indirect
 	github.com/FactomProject/factoid v0.3.4 // indirect
 	github.com/FactomProject/factom v0.3.6-0.20191211155613-15b4a020e839
-	github.com/FactomProject/factomd v6.7.0+incompatible
+	github.com/FactomProject/factomd v0.0.0
 	github.com/FactomProject/fastsha256 v0.2.1 // indirect
 	github.com/FactomProject/fsnotify v0.9.0 // indirect
 	github.com/FactomProject/go-bip32 v0.3.5 // indirect
@@ -26,6 +26,7 @@ require (
 	github.com/FactomProject/logrustash v0.0.0-20171005151533-9c7278ede46e // indirect
 	github.com/FactomProject/netki-go-partner-client v0.0.0-20160324224126-426acb535e66 // indirect
 	github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb // indirect
+	github.com/FactomProject/snappy-go v0.0.0-20170202213131-f2f83b22c29e // indirect
 	github.com/FactomProject/web v0.1.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
@@ -46,3 +47,5 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
+
+replace github.com/FactomProject/factomd => github.com/WhoSoup/factomd v6.6.0-p2p2-beta0.0.20200722134226-4826855b6a6e+incompatible

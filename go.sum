@@ -54,8 +54,12 @@ github.com/FactomProject/netki-go-partner-client v0.0.0-20160324224126-426acb535
 github.com/FactomProject/netki-go-partner-client v0.0.0-20160324224126-426acb535e66/go.mod h1:L+Od0CCfb8IzUbPM4UxLaERB1I6Bw/lD2UtzRM90pIw=
 github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb h1:qU4hdSJnIMB9y+0GfHcE80v6edheTFR3VfrpuGgExc4=
 github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb/go.mod h1:qPNpznGlx4PdRmEL7I25U/zQHrbMK1h0Az8FYahuYdo=
+github.com/FactomProject/snappy-go v0.0.0-20170202213131-f2f83b22c29e h1:qXLcZHL/avngRrZVkn4RCkn6L3l2Wabb5bsLSW1P3E4=
+github.com/FactomProject/snappy-go v0.0.0-20170202213131-f2f83b22c29e/go.mod h1:BQArcOnbPAS9l2B9Eo1R2i73/Es6PHRP0RrctmiH5jk=
 github.com/FactomProject/web v0.1.0 h1:M136UkW3h/V8hH7h+s7qqm3GGSrKGKyXi6p94Z/AgPw=
 github.com/FactomProject/web v0.1.0/go.mod h1:wiLhlN8amF4dalkSy+u75C3xsXaesSHy2cph6b/8PrI=
+github.com/WhoSoup/factomd v6.6.0-p2p2-beta0.0.20200722134226-4826855b6a6e+incompatible h1:PVziME40VOeMViK/JQJsbWydnmafpb/uTX+CNclqTUk=
+github.com/WhoSoup/factomd v6.6.0-p2p2-beta0.0.20200722134226-4826855b6a6e+incompatible/go.mod h1:S2ZQtGi+J8hDkj75rCMmlkqrV0vebBONeVpfKF//4I0=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
