@@ -139,6 +139,18 @@ func (nc *NetworkControl) craft(c echo.Context) error {
 
 	ts := primitives.NewTimestampNow()
 	out := new(bytes.Buffer)
+	fmt.Fprintf(out, `<script type="text/javascript">
+function updateTime() {
+	let f = document.getElementById('ts');
+	let millis = parseInt(f.value, 10);
+	let date = new Date(millis);
+	
+	document.getElementById('tstext').innerText = date.toUTCString();
+}
+window.addEventListener('DOMContentLoaded', (event) => {
+	updateTime();
+});
+</script>`)
 	fmt.Fprintf(out, `<form method="post" action="/create"><table>`)
 	fmt.Fprintf(out, `<tr><td colspan="2"><h1>Create New Message</h1></td></tr>`)
 	fmt.Fprintf(out, `<tr><td></td><td>
@@ -146,7 +158,7 @@ func (nc *NetworkControl) craft(c echo.Context) error {
 		<label for="removeserver"><input type="radio" name="msgtype" value="remove" id="removeserver"%s> Remove Server</label>
 	</td></tr>`, checked("add"), checked("remove"))
 	fmt.Fprintf(out, `<tr><td>Chain ID</td><td><input type="text" name="chainid" size="64" value="%s"></td></tr>`, chain)
-	fmt.Fprintf(out, `<tr><td>Timestamp</td><td><input type="text" name="timestamp" size="15" value="%d"></td></tr>`, ts.GetTimeMilli())
+	fmt.Fprintf(out, `<tr><td>Timestamp (milliseconds)</td><td><input type="text" name="timestamp" size="15" value="%d" id="ts" onchange="updateTime()" onkeyup="updateTime()"> <span id="tstext"></span></td></tr>`, ts.GetTimeMilli())
 	fmt.Fprintf(out, `<tr><td></td><td>
 		<label for="fedserver"><input type="radio" name="servertype" value="federated" id="fedserver"%s> Federated</label>
 		<label for="auditserver"><input type="radio" name="servertype" value="audit" id="auditserver"%s> Audit</label>
@@ -265,6 +277,47 @@ func (nc *NetworkControl) printMessage(c echo.Context, data []byte) error {
 	}
 
 	out := new(bytes.Buffer)
+	fmt.Fprintf(out, `<script type="text/javascript">
+
+function signWithKambani() {
+	let requestID = Date.now();
+	let event = new CustomEvent('SigningRequest', {
+		detail: {
+			"requestId": requestID,
+			"requestType": "data",
+			"requestInfo": {
+				"data": fromHex("%x"),
+				"keyType": "fct",
+			},
+		},
+	});
+
+	window.dispatchEvent(event);
+}
+function toHex(bytes) {
+	return Array.from(bytes, b => { return ('0'+(b & 0xff).toString(16)).slice(-2);}).join('')
+}
+function fromHex(s) {
+	return s.split ('').map((x) => parseInt (x, 16));
+}
+
+window.addEventListener("SigningResponse", event => {
+	console.log(event);
+	console.log(toHex(event.detail.message.data));
+	document.getElementById('pubkey').value = toHex(event.detail.publicKey.data);
+	document.getElementById('sig').value = toHex(event.detail.signature.data);
+});
+
+window.addEventListener('KambaniInstalled', event => {
+	console.log("kambani installed received");
+	document.getElementById('kambanirow').style.display = "inline";
+});
+
+window.addEventListener('load', (event) => {
+	window.dispatchEvent(new CustomEvent("IsKambaniInstalled"));
+	console.log("kambani installed sent");
+});
+</script>`, payload)
 	fmt.Fprintf(out, `<table>`)
 	fmt.Fprintf(out, `<tr><td colspan="2"><h1>Authset Management Message</h1></td></tr>`)
 	fmt.Fprintf(out, `<tr><td><b>Raw Message</b></td><td><textarea cols="64" rows="5">%x</textarea></td></tr>`, data)
@@ -306,8 +359,9 @@ func (nc *NetworkControl) printMessage(c echo.Context, data []byte) error {
 	fmt.Fprintf(out, `<input type="hidden" name="fullmsg" value="%x">`, data)
 	fmt.Fprintf(out, `<h3>Payload to Sign</h3><textarea cols="64" rows="5">%x</textarea>`, payload)
 	fmt.Fprintf(out, "<table>")
-	fmt.Fprintf(out, `<tr><td>Public Key</td><td><input type="text" name="pubkey" size="32"></td></tr>`)
-	fmt.Fprintf(out, `<tr><td>Signature</td><td><input type="text" name="sig" size="32"></td></tr>`)
+	fmt.Fprintf(out, `<tr style="" id="kambanirow"><td></td><td><button type="button" onclick="signWithKambani()">Sign with Kambani</button></td></tr>`)
+	fmt.Fprintf(out, `<tr><td>Public Key</td><td><input type="text" name="pubkey" size="32" id="pubkey"></td></tr>`)
+	fmt.Fprintf(out, `<tr><td>Signature</td><td><input type="text" name="sig" size="32" id="sig"></td></tr>`)
 	fmt.Fprintf(out, `<tr><td></td><td><button type="submit">Add</button></td></tr>`)
 	fmt.Fprintf(out, "</table>")
 
@@ -383,6 +437,7 @@ func (nc *NetworkControl) sign(c echo.Context) error {
 }
 
 func (nc *NetworkControl) submit(e echo.Context) error {
-
+	// run checks
+	// db01c2c72dd91107cee341b328f093dab23d2554b41f51f86e54ea5aaa3763d8
 	return nil
 }
