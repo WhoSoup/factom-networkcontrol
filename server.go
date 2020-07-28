@@ -32,7 +32,7 @@ const wrapper = `<!DOCTYPE html><html lang="en"><head><title>Network Control</ti
 	font-family: monospace;
 }
 td {
-	padding: 2px;
+	padding: 4px;
 }
 </style>
 %s
@@ -50,8 +50,10 @@ func CreateServer() *echo.Echo {
 
 	e.GET("/craft/:action/:chainid", nc.craft)
 	e.GET("/", nc.index)
+	e.POST("/import", nc.imp)
 	e.POST("/create", nc.create)
 	e.POST("/sign", nc.sign)
+	e.POST("/submit", nc.submit)
 
 	return e
 }
@@ -63,6 +65,17 @@ func printError(c echo.Context, err error) error {
 	return c.HTMLBlob(http.StatusOK, out.Bytes())
 }
 
+func (nc *NetworkControl) imp(c echo.Context) error {
+	fdata := c.FormValue("fullmsg")
+
+	data, err := hex.DecodeString(fdata)
+	if err != nil {
+		return printError(c, err)
+	}
+
+	return nc.printMessage(c, data)
+}
+
 func (nc *NetworkControl) index(c echo.Context) error {
 	auth, err := nc.ac.Get()
 	if err != nil {
@@ -70,6 +83,12 @@ func (nc *NetworkControl) index(c echo.Context) error {
 	}
 
 	out := new(bytes.Buffer)
+
+	fmt.Fprintf(out, `<h2>Import Message</h2>
+	<form action="/import" method="POST">
+	<table><tr><td>Message</td><td><textarea name="fullmsg" cols="60" rows="5"></textarea></td></tr><tr><td></td><td><button type="submit">Import</button></td></tr></table>
+	</form>
+	`)
 
 	fmt.Fprintf(out, "<h2>Authorities</h2><table><tr><td><b>Identity Chain ID</b></td><td><b>PubKey</b></td><td><b>Status</b></td><td colspan=\"2\"></td></tr>")
 	for _, a := range auth {
@@ -361,4 +380,9 @@ func (nc *NetworkControl) sign(c echo.Context) error {
 	}
 
 	return nc.printMessage(c, newdata)
+}
+
+func (nc *NetworkControl) submit(e echo.Context) error {
+
+	return nil
 }
