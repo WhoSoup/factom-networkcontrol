@@ -2,6 +2,7 @@ package networkcontrol
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -276,9 +277,10 @@ func (nc *NetworkControl) printMessage(c echo.Context, data []byte) error {
 		return printError(c, errors.New("invalid server type"))
 	}
 
+	manualMsg := sha256.Sum256([]byte(fmt.Sprintf("%x", payload)))
+
 	out := new(bytes.Buffer)
 	fmt.Fprintf(out, `<script type="text/javascript">
-
 function signWithKambani() {
 	let requestID = Date.now();
 	let event = new CustomEvent('SigningRequest', {
@@ -286,7 +288,7 @@ function signWithKambani() {
 			"requestId": requestID,
 			"requestType": "data",
 			"requestInfo": {
-				"data": fromHex("%x"),
+				"data": "%x",
 				"keyType": "fct",
 			},
 		},
@@ -298,7 +300,11 @@ function toHex(bytes) {
 	return Array.from(bytes, b => { return ('0'+(b & 0xff).toString(16)).slice(-2);}).join('')
 }
 function fromHex(s) {
-	return s.split ('').map((x) => parseInt (x, 16));
+	let res = [];
+	for (let i = 0; i < s.length; i += 2) {
+	  res.push(parseInt(s.substr(i, 2), 16));
+	}
+	return res;
 }
 
 window.addEventListener("SigningResponse", event => {
@@ -306,16 +312,6 @@ window.addEventListener("SigningResponse", event => {
 	console.log(toHex(event.detail.message.data));
 	document.getElementById('pubkey').value = toHex(event.detail.publicKey.data);
 	document.getElementById('sig').value = toHex(event.detail.signature.data);
-});
-
-window.addEventListener('KambaniInstalled', event => {
-	console.log("kambani installed received");
-	document.getElementById('kambanirow').style.display = "inline";
-});
-
-window.addEventListener('load', (event) => {
-	window.dispatchEvent(new CustomEvent("IsKambaniInstalled"));
-	console.log("kambani installed sent");
 });
 </script>`, payload)
 	fmt.Fprintf(out, `<table>`)
@@ -357,9 +353,9 @@ window.addEventListener('load', (event) => {
 	fmt.Fprintf(out, "<h1>Add Signature</h1>")
 	fmt.Fprintf(out, `<form method="POST" action="/sign">`)
 	fmt.Fprintf(out, `<input type="hidden" name="fullmsg" value="%x">`, data)
-	fmt.Fprintf(out, `<h3>Payload to Sign</h3><textarea cols="64" rows="5">%x</textarea>`, payload)
+	fmt.Fprintf(out, `<h3>Payload for Manual Signature</h3><textarea cols="64" rows="5">%x</textarea>`, manualMsg)
 	fmt.Fprintf(out, "<table>")
-	fmt.Fprintf(out, `<tr style="" id="kambanirow"><td></td><td><button type="button" onclick="signWithKambani()">Sign with Kambani</button></td></tr>`)
+	fmt.Fprintf(out, `<tr><td></td><td><button type="button" onclick="signWithKambani()">Sign with Kambani</button></td></tr>`)
 	fmt.Fprintf(out, `<tr><td>Public Key</td><td><input type="text" name="pubkey" size="32" id="pubkey"></td></tr>`)
 	fmt.Fprintf(out, `<tr><td>Signature</td><td><input type="text" name="sig" size="32" id="sig"></td></tr>`)
 	fmt.Fprintf(out, `<tr><td></td><td><button type="submit">Add</button></td></tr>`)
