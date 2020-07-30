@@ -452,13 +452,55 @@ func (nc *NetworkControl) submit(c echo.Context) error {
 		return printError(c, err)
 	}
 
+	ts := msg.GetTimestamp().GetTime()
+	now := time.Now()
+	diff := now.Sub(ts)
+
+	if diff > time.Hour*2 || diff < time.Hour*2 {
+		errors = append(errors, fmt.Sprintf("The timestamp is outside the acceptable window. Must be sent between %s and %s.",
+			now.Add(-time.Hour*2), now.Add(time.Hour*2)))
+	}
+
+	var sigs []interfaces.IFullSignature
+
 	switch msg.(type) {
 	case *messages.AddServerMsg:
-		//add := msg.(*messages.AddServerMsg)
+		add := msg.(*messages.AddServerMsg)
+		if s, err := add.VerifySignatures(); err != nil {
+			return printError(c, err)
+		} else {
+			sigs = s
+		}
+
 	case *messages.RemoveServerMsg:
-		//rem := msg.(*messages.AddServerMsg)
+		rem := msg.(*messages.AddServerMsg)
+		if s, err := rem.VerifySignatures(); err != nil {
+			return printError(c, err)
+		} else {
+			sigs = s
+		}
 	default:
 		return printError(c, fmt.Errorf("invalid message type: %d", msg.Type()))
+	}
+
+	auth, err := nc.ac.Get()
+	if err != nil {
+		return printError(c, err)
+	}
+
+	countReal := 0
+
+	for _, sig := range sigs {
+		for _, a := range auth {
+			if fmt.Sprintf("%x", sig.GetKey()) == a.SigningKey {
+				countReal++
+				break
+			}
+		}
+	}
+
+	if countReal < len(auth)/2+1 {
+		errors = append(errors, fmt.Sprintf("There are only %d valid signatures. Need at least %d to pass", countReal, len(auth)/2+1))
 	}
 
 	fmt.Fprintf(out, "<h2>Info</h2><ul>")
