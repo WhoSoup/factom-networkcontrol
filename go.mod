@@ -38,7 +38,7 @@ require (
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/labstack/echo/v4 v4.1.16
-	github.com/labstack/gommon v0.3.0
+	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/rs/cors v1.7.0 // indirect
@@ -48,4 +48,4 @@ require (
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
 
-replace github.com/FactomProject/factomd => github.com/WhoSoup/factomd v6.6.0-p2p2-beta0.0.20200722134226-4826855b6a6e+incompatible
+replace github.com/FactomProject/factomd => github.com/WhoSoup/factomd v6.6.0-p2p2-beta0.0.20200730075730-9ec3e9c9f077+incompatible

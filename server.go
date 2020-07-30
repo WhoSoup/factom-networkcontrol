@@ -314,15 +314,18 @@ window.addEventListener("SigningResponse", event => {
 	document.getElementById('sig').value = toHex(event.detail.signature.data);
 });
 </script>`, payload)
+	fmt.Fprintf(out, `<form action="/submit" method="POST">`)
 	fmt.Fprintf(out, `<table>`)
 	fmt.Fprintf(out, `<tr><td colspan="2"><h1>Authset Management Message</h1></td></tr>`)
-	fmt.Fprintf(out, `<tr><td><b>Raw Message</b></td><td><textarea cols="64" rows="5">%x</textarea></td></tr>`, data)
+	fmt.Fprintf(out, `<tr><td><b>Raw Message</b></td><td><textarea cols="64" rows="5" name="fullmsg">%x</textarea></td></tr>`, data)
+	fmt.Fprintf(out, `<tr><td></td><td><button type="submit">Pre-Send Checks</button></td></tr>`)
 	fmt.Fprintf(out, `<tr><td><b>Msg Type</b></td><td>%s</td></tr>`, typ)
 	fmt.Fprintf(out, `<tr><td><b>Time</b></td><td>%s</td></tr>`, msg.GetTimestamp().GetTime())
 	fmt.Fprintf(out, `<tr><td><b>Time Relative</b></td><td>%s</td></tr>`, time.Until(msg.GetTimestamp().GetTime()))
 	fmt.Fprintf(out, `<tr><td><b>Chain ID</b></td><td>%s</td></tr>`, chain)
 	fmt.Fprintf(out, `<tr><td><b>Server Type</b></td><td>%s</td></tr>`, sstype)
 	fmt.Fprintf(out, `</table>`)
+	fmt.Fprintf(out, `</form>`)
 
 	fmt.Fprintf(out, `<h1>Signatures</h1>`)
 
@@ -354,6 +357,7 @@ window.addEventListener("SigningResponse", event => {
 	fmt.Fprintf(out, `<form method="POST" action="/sign">`)
 	fmt.Fprintf(out, `<input type="hidden" name="fullmsg" value="%x">`, data)
 	fmt.Fprintf(out, `<h3>Payload for Manual Signature</h3><textarea cols="64" rows="5">%x</textarea>`, manualMsg)
+	fmt.Fprintf(out, `<div>You can sign this payload using <a href="https://github.com/FactomProject/serveridentity/tree/master/signwithed25519" target="_blank">SignWithEd25519</a></div>`)
 	fmt.Fprintf(out, "<table>")
 	fmt.Fprintf(out, `<tr><td></td><td><button type="button" onclick="signWithKambani()">Sign with Kambani</button></td></tr>`)
 	fmt.Fprintf(out, `<tr><td>Public Key</td><td><input type="text" name="pubkey" size="32" id="pubkey"></td></tr>`)
@@ -398,7 +402,7 @@ func (nc *NetworkControl) sign(c echo.Context) error {
 	switch msg.(type) {
 	case *messages.AddServerMsg:
 		add := msg.(*messages.AddServerMsg)
-		signeddata, err := add.MarshalForSignature()
+		signeddata, err := add.MarshalForKambani()
 		if err != nil {
 			return printError(c, err)
 		}
@@ -410,7 +414,7 @@ func (nc *NetworkControl) sign(c echo.Context) error {
 		add.Signatures.AddSignature(signature)
 	case *messages.RemoveServerMsg:
 		rem := msg.(*messages.AddServerMsg)
-		signeddata, err := rem.MarshalForSignature()
+		signeddata, err := rem.MarshalForKambani()
 		if err != nil {
 			return printError(c, err)
 		}
@@ -432,8 +436,45 @@ func (nc *NetworkControl) sign(c echo.Context) error {
 	return nc.printMessage(c, newdata)
 }
 
-func (nc *NetworkControl) submit(e echo.Context) error {
-	// run checks
-	// db01c2c72dd91107cee341b328f093dab23d2554b41f51f86e54ea5aaa3763d8
-	return nil
+func (nc *NetworkControl) submit(c echo.Context) error {
+	var info []string
+	var errors []string
+	out := new(bytes.Buffer)
+
+	fullmsg := c.FormValue("fullmsg")
+	fullmsgbytes, err := hex.DecodeString(fullmsg)
+	if err != nil {
+		return printError(c, err)
+	}
+
+	msg, err := msgsupport.UnmarshalMessage(fullmsgbytes)
+	if err != nil {
+		return printError(c, err)
+	}
+
+	switch msg.(type) {
+	case *messages.AddServerMsg:
+		//add := msg.(*messages.AddServerMsg)
+	case *messages.RemoveServerMsg:
+		//rem := msg.(*messages.AddServerMsg)
+	default:
+		return printError(c, fmt.Errorf("invalid message type: %d", msg.Type()))
+	}
+
+	fmt.Fprintf(out, "<h2>Info</h2><ul>")
+	for _, i := range info {
+		fmt.Fprintf(out, "<li>%s</li>", i)
+	}
+	fmt.Fprintf(out, "</ul>")
+
+	fmt.Fprintf(out, "<h2>Errors</h2><ul>")
+	for _, e := range errors {
+		fmt.Fprintf(out, "<li>%s</li>", e)
+	}
+	fmt.Fprintf(out, "</ul>")
+	fmt.Fprintf(out, `<form action="/send" method="POST">`)
+	fmt.Fprintf(out, `<input type="hidden" name="fullmsg" value="%s">`, fullmsg)
+	fmt.Fprintf(out, `</form>`)
+
+	return c.HTML(http.StatusOK, fmt.Sprintf(wrapper, "", out.String()))
 }
