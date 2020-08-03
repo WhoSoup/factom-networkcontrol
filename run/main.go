@@ -24,5 +24,5 @@ func main() {
 
 	srv := networkcontrol.CreateServer()
 	defer srv.Shutdown(context.Background())
-	log.Fatal(srv.Start(":8091"))
+	log.Fatal(srv.Start(":8081"))
 }

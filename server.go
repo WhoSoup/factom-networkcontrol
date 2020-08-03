@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/FactomProject/factom"
 	"github.com/FactomProject/factomd/common/constants"
 	"github.com/FactomProject/factomd/common/interfaces"
 	"github.com/FactomProject/factomd/common/messages"
@@ -55,6 +56,7 @@ func CreateServer() *echo.Echo {
 	e.POST("/create", nc.create)
 	e.POST("/sign", nc.sign)
 	e.POST("/submit", nc.submit)
+	e.POST("/send", nc.send)
 
 	return e
 }
@@ -129,9 +131,11 @@ func (nc *NetworkControl) craft(c echo.Context) error {
 
 	checked2 := func(s string) string {
 		if exists != nil {
+			fmt.Println(action, exists.Status, s)
 			if action == "remove" && exists.Status == s {
 				return ` checked="checked"`
-			} else if exists.Status != s {
+			}
+			if action == "add" && exists.Status != s {
 				return ` checked="checked"`
 			}
 		}
@@ -413,7 +417,7 @@ func (nc *NetworkControl) sign(c echo.Context) error {
 
 		add.Signatures.AddSignature(signature)
 	case *messages.RemoveServerMsg:
-		rem := msg.(*messages.AddServerMsg)
+		rem := msg.(*messages.RemoveServerMsg)
 		signeddata, err := rem.MarshalForKambani()
 		if err != nil {
 			return printError(c, err)
@@ -456,12 +460,15 @@ func (nc *NetworkControl) submit(c echo.Context) error {
 	now := time.Now()
 	diff := now.Sub(ts)
 
-	if diff > time.Hour*2 || diff < time.Hour*2 {
+	if diff > time.Hour || diff < -time.Hour {
 		errors = append(errors, fmt.Sprintf("The timestamp is outside the acceptable window. Must be sent between %s and %s.",
-			now.Add(-time.Hour*2), now.Add(time.Hour*2)))
+			ts.Add(-time.Hour), ts.Add(time.Hour)))
 	}
 
 	var sigs []interfaces.IFullSignature
+	var server interfaces.IHash
+	serverType := 0
+	adding := false
 
 	switch msg.(type) {
 	case *messages.AddServerMsg:
@@ -470,14 +477,18 @@ func (nc *NetworkControl) submit(c echo.Context) error {
 			return printError(c, err)
 		} else {
 			sigs = s
+			server = add.ServerChainID
+			serverType = add.ServerType
 		}
-
+		adding = true
 	case *messages.RemoveServerMsg:
-		rem := msg.(*messages.AddServerMsg)
+		rem := msg.(*messages.RemoveServerMsg)
 		if s, err := rem.VerifySignatures(); err != nil {
 			return printError(c, err)
 		} else {
 			sigs = s
+			server = rem.ServerChainID
+			serverType = rem.ServerType
 		}
 	default:
 		return printError(c, fmt.Errorf("invalid message type: %d", msg.Type()))
@@ -487,8 +498,10 @@ func (nc *NetworkControl) submit(c echo.Context) error {
 	if err != nil {
 		return printError(c, err)
 	}
-
 	countReal := 0
+
+	isAuth := false
+	isFed := false
 
 	for _, sig := range sigs {
 		for _, a := range auth {
@@ -496,6 +509,45 @@ func (nc *NetworkControl) submit(c echo.Context) error {
 				countReal++
 				break
 			}
+		}
+	}
+
+	for _, a := range auth {
+		if server.String() == a.AuthorityChainID {
+			isAuth = true
+			if a.Status == "federated" {
+				isFed = true
+			}
+			break
+		}
+	}
+
+	if isAuth {
+		if adding {
+			if serverType == 0 { // to fed
+				if isFed {
+					errors = append(errors, "Promoting a node that is already a fed to fed")
+				} else {
+					info = append(info, "Promoting an Audit node to a Fed node and increasing # of feds")
+
+				}
+			} else if serverType == 1 { // to audit
+				if isFed {
+					info = append(info, "Demoting a Fed node to an Audit node and decreasing # of feds")
+				} else {
+					errors = append(errors, "Demoting a node that is an audit node to audit node")
+				}
+			}
+		}
+	} else { // new server
+		if adding {
+			typ := "Federated"
+			if serverType == 1 {
+				typ = "Audit"
+			}
+			info = append(info, fmt.Sprintf("Promoting a new server into the authority set as %s Node", typ))
+		} else {
+			errors = append(errors, "Trying to remove a server that's not in the authority set")
 		}
 	}
 
@@ -513,10 +565,32 @@ func (nc *NetworkControl) submit(c echo.Context) error {
 	for _, e := range errors {
 		fmt.Fprintf(out, "<li>%s</li>", e)
 	}
+
+	label := "Submit to Network"
+	if len(errors) > 0 {
+		label = "Submit to Network despite errors"
+	}
 	fmt.Fprintf(out, "</ul>")
 	fmt.Fprintf(out, `<form action="/send" method="POST">`)
 	fmt.Fprintf(out, `<input type="hidden" name="fullmsg" value="%s">`, fullmsg)
+	fmt.Fprintf(out, `<button type="submit">%s</button>`, label)
 	fmt.Fprintf(out, `</form>`)
 
 	return c.HTML(http.StatusOK, fmt.Sprintf(wrapper, "", out.String()))
+}
+
+func (nc *NetworkControl) send(c echo.Context) error {
+	fullmsg := c.FormValue("fullmsg")
+	fullmsgbytes, err := hex.DecodeString(fullmsg)
+	if err != nil {
+		return printError(c, err)
+	}
+
+	_, err = msgsupport.UnmarshalMessage(fullmsgbytes)
+	if err != nil {
+		return printError(c, err)
+	}
+
+	factom.SendRawMsg(fullmsg)
+	return c.HTML(http.StatusOK, fmt.Sprintf(wrapper, "", "Message submitted. <a href=\"/\">Go back</a>"))
 }
