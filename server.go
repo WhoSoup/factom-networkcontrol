@@ -87,6 +87,8 @@ func (nc *NetworkControl) index(c echo.Context) error {
 
 	out := new(bytes.Buffer)
 
+	fmt.Fprintf(out, `<h2><a href="/craft/add/new">Craft New Message</a></h2>`)
+
 	fmt.Fprintf(out, `<h2>Import Message</h2>
 	<form action="/import" method="POST">
 	<table><tr><td>Message</td><td><textarea name="fullmsg" cols="60" rows="5"></textarea></td></tr><tr><td></td><td><button type="submit">Import</button></td></tr></table>
