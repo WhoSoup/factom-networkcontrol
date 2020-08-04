@@ -42,7 +42,7 @@ td {
 
 func CreateServer() *echo.Echo {
 	nc := new(NetworkControl)
-	nc.ac = NewAuthCache(time.Minute)
+	nc.ac = NewAuthCache(time.Second * 5)
 
 	e := echo.New()
 
@@ -561,18 +561,25 @@ func (nc *NetworkControl) submit(c echo.Context) error {
 	for _, i := range info {
 		fmt.Fprintf(out, "<li>%s</li>", i)
 	}
+	if len(info) == 0 {
+		fmt.Fprintf(out, "<li><i>None</i></li>")
+	}
 	fmt.Fprintf(out, "</ul>")
 
 	fmt.Fprintf(out, "<h2>Errors</h2><ul>")
 	for _, e := range errors {
 		fmt.Fprintf(out, "<li>%s</li>", e)
 	}
+	if len(errors) == 0 {
+		fmt.Fprintf(out, "<li><i>None</i></li>")
+	}
+	fmt.Fprintf(out, "</ul>")
 
 	label := "Submit to Network"
 	if len(errors) > 0 {
 		label = "Submit to Network despite errors"
 	}
-	fmt.Fprintf(out, "</ul>")
+
 	fmt.Fprintf(out, `<form action="/send" method="POST">`)
 	fmt.Fprintf(out, `<input type="hidden" name="fullmsg" value="%s">`, fullmsg)
 	fmt.Fprintf(out, `<button type="submit">%s</button>`, label)
