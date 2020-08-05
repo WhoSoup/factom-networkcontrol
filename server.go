@@ -57,6 +57,7 @@ func CreateServer() *echo.Echo {
 	e.POST("/sign", nc.sign)
 	e.POST("/submit", nc.submit)
 	e.POST("/send", nc.send)
+	e.POST("/merge", nc.merge)
 
 	return e
 }
@@ -373,6 +374,14 @@ window.addEventListener("SigningResponse", event => {
 
 	fmt.Fprintf(out, `</form>`)
 
+	fmt.Fprintf(out, "<h1>Import Signatures</h1>")
+	fmt.Fprintf(out, "Import the signatures from a message")
+	fmt.Fprintf(out, `<form method="POST" action="/merge">`)
+	fmt.Fprintf(out, `<input type="hidden" name="fullmsg" value="%x">`, data)
+	fmt.Fprintf(out, `<div><textarea cols="64" rows="5" name="othermsg"></textarea></div>`)
+	fmt.Fprintf(out, `<button type="submit">Merge Signatures</button>`)
+	fmt.Fprintf(out, `</form>`)
+
 	return c.HTML(http.StatusOK, fmt.Sprintf(wrapper, "", out.String()))
 }
 
@@ -602,4 +611,68 @@ func (nc *NetworkControl) send(c echo.Context) error {
 
 	factom.SendRawMsg(fullmsg)
 	return c.HTML(http.StatusOK, fmt.Sprintf(wrapper, "", "Message submitted. <a href=\"/\">Go back</a>"))
+}
+
+func merge(a, b interfaces.IFullSignatureBlock) {
+	has := make(map[string]bool)
+	for _, sig := range a.GetSignatures() {
+		has[fmt.Sprintf("%x", sig.GetKey())] = true
+	}
+
+	for _, sig := range b.GetSignatures() {
+		if has[fmt.Sprintf("%x", sig.GetKey())] {
+			continue
+		}
+		a.AddSignature(sig)
+	}
+}
+
+func (nc *NetworkControl) merge(c echo.Context) error {
+
+	data, err := hex.DecodeString(c.FormValue("fullmsg"))
+	if err != nil {
+		return printError(c, err)
+	}
+
+	a, err := msgsupport.UnmarshalMessage(data)
+	if err != nil {
+		return printError(c, err)
+	}
+
+	data, err = hex.DecodeString(c.FormValue("othermsg"))
+	if err != nil {
+		return printError(c, err)
+	}
+
+	b, err := msgsupport.UnmarshalMessage(data)
+	if err != nil {
+		return printError(c, err)
+	}
+
+	switch a.(type) {
+	case *messages.AddServerMsg:
+		amsg := a.(*messages.AddServerMsg)
+		bmsg, ok := b.(*messages.AddServerMsg)
+		if !ok {
+			return printError(c, errors.New("mismatched message type"))
+		}
+
+		merge(amsg.Signatures, bmsg.Signatures)
+	case *messages.RemoveServerMsg:
+		amsg := a.(*messages.RemoveServerMsg)
+		bmsg, ok := b.(*messages.RemoveServerMsg)
+		if !ok {
+			return printError(c, errors.New("mismatched message type"))
+		}
+		merge(amsg.Signatures, bmsg.Signatures)
+	default:
+		return printError(c, errors.New("unknown message type"))
+	}
+
+	data, err = a.MarshalBinary()
+	if err != nil {
+		return printError(c, err)
+	}
+
+	return nc.printMessage(c, data)
 }
