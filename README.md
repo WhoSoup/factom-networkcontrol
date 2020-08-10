@@ -4,7 +4,7 @@ A standalone webapp that interfaces with the Factomd API in order to create, man
 
 ## Running
 
-Compiled the `run` subfolder via `go build` or `go install`.
+Compile the `run` subfolder via `go build` or `go install`.
 
 Run with: `./run` 
 
