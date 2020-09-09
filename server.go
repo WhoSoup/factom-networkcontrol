@@ -296,7 +296,7 @@ function signWithKambani() {
 			"requestType": "data",
 			"requestInfo": {
 				"data": "%x",
-				"keyType": "fct",
+				"keyType": "blockSigningKey",
 			},
 		},
 	});
